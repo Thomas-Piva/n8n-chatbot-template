@@ -1,5 +1,8 @@
-// Chat Widget Script
 (function() {
+    // Prevent multiple initializations
+    if (window.N8NChatWidgetInitialized) return;
+    window.N8NChatWidgetInitialized = true;
+
     // Create and inject styles
     const styles = `
         .n8n-chat-widget {
@@ -173,9 +176,34 @@
             background: var(--chat--color-background);
             border: 1px solid rgba(133, 79, 255, 0.2);
             color: var(--chat--color-font);
-            align-self: flex-start;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
+
+        /* === AVATAR BOT: wrapper + immagine === */
+        .n8n-chat-widget .bot-message-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            align-self: flex-start;
+            max-width: 85%;
+            margin: 8px 0;
+        }
+
+        .n8n-chat-widget .bot-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .n8n-chat-widget .bot-message-wrapper .chat-message.bot {
+            margin: 0;
+            flex: 1;
+            min-width: 0;
+        }
+        /* === FINE AVATAR BOT === */
 
         .n8n-chat-widget .chat-input {
             padding: 16px;
@@ -296,13 +324,13 @@
             welcomeText: '',
             responseTimeText: '',
             poweredBy: {
-                text: 'Powered by Mad',
-                link: 'https://n8n.partnerlinks.io/m8a94i19zhqq?utm_source=nocodecreative.io'
+                text: 'Powered by TuoBrand',
+                link: 'https://tuodominio.it'
             }
         },
         style: {
-            primaryColor: '',
-            secondaryColor: '',
+            primaryColor: '#854fff',
+            secondaryColor: '#6b3fd4',
             position: 'right',
             backgroundColor: '#ffffff',
             fontColor: '#333333'
@@ -310,23 +338,45 @@
     };
 
     // Merge user config with defaults
-    const config = window.ChatWidgetConfig ? 
+    const config = window.ChatWidgetConfig ?
         {
             webhook: { ...defaultConfig.webhook, ...window.ChatWidgetConfig.webhook },
-            branding: { ...defaultConfig.branding, ...window.ChatWidgetConfig.branding },
+            branding: {
+                ...defaultConfig.branding,
+                ...window.ChatWidgetConfig.branding,
+                poweredBy: {
+                    ...defaultConfig.branding.poweredBy,
+                    ...(window.ChatWidgetConfig.branding && window.ChatWidgetConfig.branding.poweredBy)
+                }
+            },
             style: { ...defaultConfig.style, ...window.ChatWidgetConfig.style }
         } : defaultConfig;
 
-    // Prevent multiple initializations
-    if (window.N8NChatWidgetInitialized) return;
-    window.N8NChatWidgetInitialized = true;
-
     let currentSessionId = '';
+
+    // --- Helper: crea un messaggio bot con avatar ---
+    function createBotMessage(text) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bot-message-wrapper';
+
+        const avatar = document.createElement('img');
+        avatar.className = 'bot-avatar';
+        avatar.src = config.branding.logo;
+        avatar.alt = config.branding.name;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-message bot';
+        bubble.textContent = text;
+
+        wrapper.appendChild(avatar);
+        wrapper.appendChild(bubble);
+        return wrapper;
+    }
 
     // Create widget container
     const widgetContainer = document.createElement('div');
     widgetContainer.className = 'n8n-chat-widget';
-    
+
     // Set CSS variables for colors
     widgetContainer.style.setProperty('--n8n-chat-primary-color', config.style.primaryColor);
     widgetContainer.style.setProperty('--n8n-chat-secondary-color', config.style.secondaryColor);
@@ -335,12 +385,12 @@
 
     const chatContainer = document.createElement('div');
     chatContainer.className = `chat-container${config.style.position === 'left' ? ' position-left' : ''}`;
-    
+
     const newConversationHTML = `
         <div class="brand-header">
             <img src="${config.branding.logo}" alt="${config.branding.name}">
             <span>${config.branding.name}</span>
-            <button class="close-button">×</button>
+            <button class="close-button">&times;</button>
         </div>
         <div class="new-conversation">
             <h2 class="welcome-text">${config.branding.welcomeText}</h2>
@@ -359,7 +409,7 @@
             <div class="brand-header">
                 <img src="${config.branding.logo}" alt="${config.branding.name}">
                 <span>${config.branding.name}</span>
-                <button class="close-button">×</button>
+                <button class="close-button">&times;</button>
             </div>
             <div class="chat-messages"></div>
             <div class="chat-input">
@@ -371,16 +421,16 @@
             </div>
         </div>
     `;
-    
+
     chatContainer.innerHTML = newConversationHTML + chatInterfaceHTML;
-    
+
     const toggleButton = document.createElement('button');
     toggleButton.className = `chat-toggle${config.style.position === 'left' ? ' position-left' : ''}`;
     toggleButton.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path d="M12 2C6.477 2 2 6.477 2 12c0 1.821.487 3.53 1.338 5L2.5 21.5l4.5-.838A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18c-1.476 0-2.886-.313-4.156-.878l-3.156.586.586-3.156A7.962 7.962 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/>
         </svg>`;
-    
+
     widgetContainer.appendChild(chatContainer);
     widgetContainer.appendChild(toggleButton);
     document.body.appendChild(widgetContainer);
@@ -391,27 +441,19 @@
     const textarea = chatContainer.querySelector('textarea');
     const sendButton = chatContainer.querySelector('button[type="submit"]');
 
-    function generateUUID() {
-        return crypto.randomUUID();
-    }
-
     async function startNewConversation() {
-        currentSessionId = generateUUID();
+        currentSessionId = crypto.randomUUID();
         const data = [{
             action: "loadPreviousSession",
             sessionId: currentSessionId,
             route: config.webhook.route,
-            metadata: {
-                userId: ""
-            }
+            metadata: { userId: "" }
         }];
 
         try {
             const response = await fetch(config.webhook.url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
 
@@ -420,10 +462,8 @@
             chatContainer.querySelector('.new-conversation').style.display = 'none';
             chatInterface.classList.add('active');
 
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.className = 'chat-message bot';
-            botMessageDiv.textContent = Array.isArray(responseData) ? responseData[0].output : responseData.output;
-            messagesContainer.appendChild(botMessageDiv);
+            const text = Array.isArray(responseData) ? responseData[0].output : responseData.output;
+            messagesContainer.appendChild(createBotMessage(text));
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             console.error('Error:', error);
@@ -436,11 +476,10 @@
             sessionId: currentSessionId,
             route: config.webhook.route,
             chatInput: message,
-            metadata: {
-                userId: ""
-            }
+            metadata: { userId: "" }
         };
 
+        // Messaggio utente (senza avatar, allineato a destra)
         const userMessageDiv = document.createElement('div');
         userMessageDiv.className = 'chat-message user';
         userMessageDiv.textContent = message;
@@ -450,18 +489,13 @@
         try {
             const response = await fetch(config.webhook.url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(messageData)
             });
-            
+
             const data = await response.json();
-            
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.className = 'chat-message bot';
-            botMessageDiv.textContent = Array.isArray(data) ? data[0].output : data.output;
-            messagesContainer.appendChild(botMessageDiv);
+            const text = Array.isArray(data) ? data[0].output : data.output;
+            messagesContainer.appendChild(createBotMessage(text));
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             console.error('Error:', error);
@@ -469,7 +503,7 @@
     }
 
     newChatBtn.addEventListener('click', startNewConversation);
-    
+
     sendButton.addEventListener('click', () => {
         const message = textarea.value.trim();
         if (message) {
@@ -477,7 +511,7 @@
             textarea.value = '';
         }
     });
-    
+
     textarea.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -488,12 +522,11 @@
             }
         }
     });
-    
+
     toggleButton.addEventListener('click', () => {
         chatContainer.classList.toggle('open');
     });
 
-    // Add close button handlers
     const closeButtons = chatContainer.querySelectorAll('.close-button');
     closeButtons.forEach(button => {
         button.addEventListener('click', () => {
