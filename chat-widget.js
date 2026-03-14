@@ -386,26 +386,8 @@
     const chatContainer = document.createElement('div');
     chatContainer.className = `chat-container${config.style.position === 'left' ? ' position-left' : ''}`;
 
-    const newConversationHTML = `
-        <div class="brand-header">
-            <img src="${config.branding.logo}" alt="${config.branding.name}">
-            <span>${config.branding.name}</span>
-            <button class="close-button">&times;</button>
-        </div>
-        <div class="new-conversation">
-            <h2 class="welcome-text">${config.branding.welcomeText}</h2>
-            <button class="new-chat-btn">
-                <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/>
-                </svg>
-                Send us a message
-            </button>
-            <p class="response-text">${config.branding.responseTimeText}</p>
-        </div>
-    `;
-
     const chatInterfaceHTML = `
-        <div class="chat-interface">
+        <div class="chat-interface active">
             <div class="brand-header">
                 <img src="${config.branding.logo}" alt="${config.branding.name}">
                 <span>${config.branding.name}</span>
@@ -422,7 +404,7 @@
         </div>
     `;
 
-    chatContainer.innerHTML = newConversationHTML + chatInterfaceHTML;
+    chatContainer.innerHTML = chatInterfaceHTML;
 
     const toggleButton = document.createElement('button');
     toggleButton.className = `chat-toggle${config.style.position === 'left' ? ' position-left' : ''}`;
@@ -435,7 +417,6 @@
     widgetContainer.appendChild(toggleButton);
     document.body.appendChild(widgetContainer);
 
-    const newChatBtn = chatContainer.querySelector('.new-chat-btn');
     const chatInterface = chatContainer.querySelector('.chat-interface');
     const messagesContainer = chatContainer.querySelector('.chat-messages');
     const textarea = chatContainer.querySelector('textarea');
@@ -458,10 +439,6 @@
             });
 
             const responseData = await response.json();
-            chatContainer.querySelector('.brand-header').style.display = 'none';
-            chatContainer.querySelector('.new-conversation').style.display = 'none';
-            chatInterface.classList.add('active');
-
             const text = Array.isArray(responseData) ? responseData[0].output : responseData.output;
             messagesContainer.appendChild(createBotMessage(text));
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -502,7 +479,6 @@
         }
     }
 
-    newChatBtn.addEventListener('click', startNewConversation);
 
     sendButton.addEventListener('click', () => {
         const message = textarea.value.trim();
@@ -525,6 +501,9 @@
 
     toggleButton.addEventListener('click', () => {
         chatContainer.classList.toggle('open');
+        if (chatContainer.classList.contains('open') && !currentSessionId) {
+            startNewConversation();
+        }
     });
 
     const closeButtons = chatContainer.querySelectorAll('.close-button');
