@@ -1,4 +1,4 @@
-(function() {
+(function () {
     // Prevent multiple initializations
     if (window.N8NChatWidgetInitialized) return;
     window.N8NChatWidgetInitialized = true;
@@ -324,7 +324,7 @@
             welcomeText: '',
             responseTimeText: '',
             poweredBy: {
-                text: 'Powered by TuoBrand',
+                text: 'Powered by Taskio',
                 link: 'https://tuodominio.it'
             }
         },

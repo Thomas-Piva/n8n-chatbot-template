@@ -2,7 +2,7 @@
     <script>
         window.ChatWidgetConfig = {
             webhook: {
-                url: 'https://n8n.devmesh.xyz/webhook/932dc328-f1bc-470e-ae29-3cb593f439a4/chat',
+                url: 'https://n8n.srv1290246.hstgr.cloud/webhook/65426c8d-65ae-4ac4-ae75-eedb7afb3808',
                 route: 'general'
             },
             branding: {
@@ -20,6 +20,6 @@
             }
         };
     </script>
-    <script src="https://cdn.jsdelivr.net/gh/juansebsol/n8n-chatbot-template@latest/chat-widget.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Thomas-Piva/n8n-chatbot-template@main/chat-widget.js"></script>
     <!-- Widget Script -->
     
